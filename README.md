@@ -62,8 +62,11 @@ bqutil analyze my-project:job_id --location asia-northeast1 --format json
 # Analyze the last query recorded in this config file, including its saved location.
 bqutil analyze --last --format json
 
-# Compare a baseline job with a candidate job. Every delta is candidate minus baseline.
-bqutil compare PROJECT:baseline-job PROJECT:candidate-job --format json
+# Compare a baseline job with a candidate job. JSON is the default and retains raw evidence.
+bqutil compare PROJECT:baseline-job PROJECT:candidate-job
+
+# Use text only for a concise human delta summary.
+bqutil compare PROJECT:baseline-job PROJECT:candidate-job --format text
 ```
 
 ## Compare query jobs
@@ -75,13 +78,13 @@ baseline job, dry-run candidate SQL, run the candidate, then compare both jobs:
 bqutil query candidate.sql --project my-project --dry-run
 bqutil query candidate.sql --project my-project
 bqutil analyze --last --format json
-bqutil compare my-project:baseline-job my-project:candidate-job --format json
+bqutil compare my-project:baseline-job my-project:candidate-job
 ```
 
-The JSON document includes raw JSON-safe summaries for both jobs, including
-`cache_hit` and every public query-plan-stage field: timing, parallel inputs,
-wait/read/compute/write metrics, record counts, shuffle and spill bytes, and execution
-steps. Its metric records contain `baseline`, `candidate`, `absolute_delta`, and
+JSON is the default output. It includes raw JSON-safe summaries for both jobs,
+including `cache_hit` and every public query-plan-stage field: timing, parallel
+inputs, wait/read/compute/write metrics, record counts, shuffle and spill bytes, and
+execution steps. Use `--format text` only for a concise human delta summary. Its metric records contain `baseline`, `candidate`, `absolute_delta`, and
 `percent_change`. Every delta is exactly candidate minus baseline. Percent change is
 `null` when the baseline is zero or unavailable. Missing source metrics remain `null`.
 A missing query plan remains `null`. An observed empty plan reports an empty list and

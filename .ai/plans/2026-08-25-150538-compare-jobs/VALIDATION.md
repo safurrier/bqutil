@@ -27,6 +27,9 @@ description: Deterministic validation evidence for compare-jobs.
   candidate metrics. The command submitted no BigQuery work and changed no config.
 - The final Codex repair tests prove baseline and candidate authentication failures
   produce actionable errors without tracebacks.
+- The GitHub repair test invokes `compare` without `--format`, parses one JSON
+  document, and asserts baseline/candidate cache state, query-plan evidence, and
+  candidate-minus-baseline deltas. The existing explicit text test remains concise.
 
 ## Evidence
 

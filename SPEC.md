@@ -42,9 +42,10 @@ without submitting it again.
   `analyze` output uses stdout.
 - Output selection is CSV, JSON Lines, or Parquet by suffix. The command records the
   job before reporting a Parquet or other local export failure.
-- `compare BASELINE_JOB CANDIDATE_JOB` accepts query jobs only. It returns JSON-safe
-  summaries with cache state and every public query-plan-stage field. It also returns
-  exact candidate-minus-baseline deltas.
+- `compare BASELINE_JOB CANDIDATE_JOB` accepts query jobs only. Its default JSON
+  output returns summaries with cache state and every public query-plan-stage field.
+  It also returns exact candidate-minus-baseline deltas. `--format text` is a concise
+  human delta summary and does not retain the raw summaries.
 - Each metric keeps its baseline, candidate, absolute delta, and percent change. The
   metrics are duration, bytes processed, slot time, stage count, stage-records-read
   sum, and stage-shuffle-output-bytes sum.
@@ -73,6 +74,8 @@ without submitting it again.
   `--format json`, `--llm`, `--verbose`, and `--debug`.
 - `analyze --last` reuses the saved job location. Callers can provide `--location`
   when inspecting a job that wasn't recorded locally.
+- `compare` defaults to `--format json`; `--format text` opts into concise human
+  output.
 - `compare` supports `PROJECT:JOB_ID`, shared project and location fallbacks, and
   per-job options. Qualified IDs override project fallbacks. Per-job options override
   shared fallbacks.

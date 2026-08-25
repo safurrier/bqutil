@@ -43,7 +43,8 @@ Google Cloud authentication, query execution, and job metadata.
    adapter. A fetch failure names the affected operand and resolved project/location.
    The analysis module retains both raw summaries, including all public query-plan
    stage evidence, and computes exact candidate minus baseline deltas without issuing
-   an optimization verdict.
+   an optimization verdict. JSON is the default comparison interface; text is a
+   concise human delta rendering that omits raw summaries.
 
 ## Invariants
 
@@ -54,8 +55,9 @@ Google Cloud authentication, query execution, and job metadata.
 - Dry runs are non-executing estimates that leave bqutil state unchanged.
 - Query preprocessing runs before every dry run or submission. It remains a narrow
   legacy dbt macro adapter, not a general dbt implementation.
-- Compare JSON includes cache state and all public query-plan stage evidence. Exact
-  numeric deltas are an agent-facing machine consumer schema, not a quality label,
+- Compare defaults to JSON, which includes cache state and all public query-plan stage
+  evidence. Exact numeric deltas are an agent-facing machine consumer schema, not a
+  quality label,
   score, or action gate. An unavailable query plan and its stage metrics remain null.
   An observed empty plan retains an empty list and zero stage metrics.
 - Interactive selection isn't supported. Every automation input has an argument,

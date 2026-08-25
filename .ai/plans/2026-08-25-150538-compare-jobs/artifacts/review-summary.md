@@ -14,4 +14,5 @@ threshold, recommendation, action gate, or regression exit code.
 
 The final Codex review identified two follow-ups. Compare now catches both Google API
 and credential failures at the same operand-specific error seam, and the ledger links
-to the committed Markdown schema artifact.
+to the committed Markdown schema artifact. A GitHub review then found that default
+text omitted raw evidence; JSON is now the default and text is explicitly concise.

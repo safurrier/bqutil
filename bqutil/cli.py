@@ -120,7 +120,7 @@ def format_signed_bytes(value: int | None) -> str:
 
 
 def render_comparison_text(comparison: dict[str, Any]) -> None:
-    """Render exact comparison evidence without assigning a quality verdict."""
+    """Render a concise human delta summary without assigning a quality verdict."""
     click.echo("Candidate minus baseline: positive means candidate is greater.")
     click.echo("Missing values are unavailable; no optimization verdict is inferred.")
     units = {
@@ -323,7 +323,12 @@ def analyze(
     help="Location fallback for CANDIDATE_JOB.",
 )
 @click.option(
-    "--format", "output_format", type=click.Choice(["text", "json"]), default="text"
+    "--format",
+    "output_format",
+    type=click.Choice(["text", "json"]),
+    default="json",
+    show_default=True,
+    help="Output JSON evidence by default; use text for a concise delta summary.",
 )
 def compare(
     baseline_job: str,

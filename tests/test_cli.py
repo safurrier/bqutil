@@ -184,8 +184,6 @@ def test_compare_json_is_one_parseable_document_and_uses_project_location_preced
             "US",
             "--candidate-location",
             "asia-northeast1",
-            "--format",
-            "json",
         ],
     )
 
@@ -197,6 +195,10 @@ def test_compare_json_is_one_parseable_document_and_uses_project_location_preced
     ]
     payload = json.loads(result.stdout)
     assert payload["semantics"] == "candidate_minus_baseline"
+    assert payload["baseline"]["cache_hit"] is False
+    assert payload["candidate"]["cache_hit"] is False
+    assert payload["baseline"]["query_plan"][0]["entry_id"] == "1"
+    assert payload["candidate"]["query_plan"][0]["entry_id"] == "1"
     assert payload["metrics"]["bytes_processed"]["absolute_delta"] == 1024
 
 

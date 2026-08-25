@@ -38,9 +38,13 @@ then update the active scaffold plan and run the sync contract before handoff.
 - **DO** use `--dry-run` before unfamiliar SQL and an explicitly approved project for
   a live smoke test. **NOT** treat dry-run proof as permission to execute arbitrary
   SQL. **BECAUSE** caller-supplied SQL retains authority over billing and mutations.
-- **DO** preserve both jobs' raw summaries and explicit candidate-minus-baseline
-  deltas in comparisons. **NOT** add optimization labels, thresholds, or exit-code
-  gates. **BECAUSE** agents need the source evidence to make context-specific choices.
+- **DO** default comparisons to JSON with both raw summaries and explicit
+  candidate-minus-baseline deltas. **NOT** add optimization labels, thresholds, or
+  exit-code gates. **BECAUSE** agents need the source evidence to make context-specific
+  choices.
+- **DO** reserve `compare --format text` for concise human delta summaries. **NOT**
+  claim that text preserves raw job evidence. **BECAUSE** text deliberately omits the
+  raw summaries for terminal readability.
 
 ## Related Context
 

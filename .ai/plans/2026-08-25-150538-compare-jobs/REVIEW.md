@@ -29,6 +29,7 @@ description: External review record for compare-jobs.
 - P1: Missing query-plan metadata became known zero stage metrics.
 - P2: Credential refresh failures bypassed compare's operand-specific error path.
 - P3: The decision ledger referenced a non-existent JSON schema artifact.
+- P2: Default text output omitted raw baseline and candidate evidence.
 
 ## Disposition
 
@@ -50,3 +51,5 @@ description: External review record for compare-jobs.
   and a stale schema artifact suffix. Compare now catches `GoogleAuthError` with the
   same operand-specific `ClickException`, tests both operands, and links the Markdown
   schema artifact.
+- The GitHub review found that default text omitted raw summaries. Compare now defaults
+  to JSON, and `--format text` explicitly selects the concise delta-only rendering.
