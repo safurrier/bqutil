@@ -1,0 +1,15 @@
+#:schema https://mise.jdx.dev/schema/mise.json
+
+# ─────────────────────────────────────────────
+# bqutil — mise configuration
+# ─────────────────────────────────────────────
+
+[tools]
+python = "3.12"
+uv = "latest"
+
+[env]
+MISE_PROJECT_ROOT = "{{config_root}}"
+SCAFFOLD_PROJECT_NAME  = "bqutil"
+SCAFFOLD_PROJECT_SHAPE = "single"
+SCAFFOLD_PROJECT_STACK = "python"
