@@ -1,15 +1,15 @@
 ---
 id: plan-spec
 title: Task Specification
-description: Requirements and constraints for extracting bqutil from Dots.
+description: Requirements and constraints for packaging the original bqutil script.
 ---
 
 # Specification — package-bqutil
 
 ## Problem
 
-The Dots repository owned bqutil as a 1,192-line PEP 723 script with a manual smoke
-driver. It lacked an installable package seam, isolated tests, and a stable Git pin.
+The original bqutil was a 1,192-line PEP 723 script with a manual smoke driver. It
+lacked an installable package seam, isolated tests, and a stable Git pin.
 
 ## Requirements
 

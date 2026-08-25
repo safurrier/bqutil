@@ -78,7 +78,7 @@ Still inspect CI, task runners, docs, and repo conventions directly.
    explicit overwrite approval or use `hk profile create`, which refuses
    overwrites unless `--force` is passed.
 7. Only after confirmation, write to the explicit catalog chosen by the user.
-   If dots manages the user's HK config, write to the dots source tree under
+   If a dotfiles manager owns the user's HK config, write to that source tree's
    `config/harness-toolkit/profiles/`, not deployed `~/.config/...`, unless the
    user explicitly requests a runtime-only experiment.
 

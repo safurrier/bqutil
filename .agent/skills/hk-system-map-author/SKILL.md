@@ -1,11 +1,11 @@
 ---
 name: hk-system-map-author
-description: This skill creates, updates, audits, and validates Harness Kit system maps, including repo-local .harness/system.toml files and target-level user/dots system_map overlays. Use when authoring agent-facing component/invariant maps, connecting touched paths to relevant HK profile check labels, dogfooding system-map candidates, or preparing Harness Kit CLI integration trials.
+description: This skill creates, updates, audits, and validates Harness Kit system maps, including repo-local .harness/system.toml files and target-level user-managed system_map overlays. Use when authoring agent-facing component/invariant maps, connecting touched paths to relevant HK profile check labels, dogfooding system-map candidates, or preparing Harness Kit CLI integration trials.
 ---
 
 # hk-system-map-author
 
-Author Harness Kit system maps: compact, deterministic path-to-component/invariant maps for agents. Maps may live repo-locally at `.harness/system.toml` or as user/dots-managed target-level overlays referenced by `harness.toml` with `system_map = "..."`. Treat the file as a narrow preflight contract for agents, not as architecture documentation.
+Author Harness Kit system maps: compact, deterministic path-to-component/invariant maps for agents. Maps may live repo-locally at `.harness/system.toml` or as user-managed target-level overlays referenced by `harness.toml` with `system_map = "..."`. Treat the file as a narrow preflight contract for agents, not as architecture documentation.
 
 Core distinction:
 
@@ -15,7 +15,7 @@ Core distinction:
 
 ## Use cases
 
-- Create the first repo-local `.harness/system.toml` or target-level user/dots system map for a repo or scoped module.
+- Create the first repo-local `.harness/system.toml` or target-level user-managed system map for a repo or scoped module.
 - Audit an existing system map for schema, path, invariant, and check-label quality.
 - Refresh a component or invariant after a codebase change.
 - Dogfood candidate maps before adding or changing Harness Kit CLI integration.
@@ -64,7 +64,7 @@ Use these diagnostics as evidence, not an oracle. They validate joins and explai
 
 1. Determine the target repo root and map location:
    - repo-local: `<repo-root>/.harness/system.toml`;
-   - target-level overlay: a user/dots map referenced by `harness.toml` with `system_map = "..."`.
+   - target-level overlay: a user-managed map referenced by `harness.toml` with `system_map = "..."`.
 2. Read existing HK surfaces:
    - `harness.toml`, `.harness/harness.toml`, `.harness/profiles/*.toml`, or user-provided profile files;
    - `AGENTS.md`, README, docs/architecture, ADRs;

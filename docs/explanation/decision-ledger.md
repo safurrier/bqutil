@@ -17,8 +17,8 @@ index:
 ### 2026-08-25 — package-bqutil
 
 - Plan: `.ai/plans/2026-08-25-115713-package-bqutil/`
-- Change: Extract the Dots script into a Git-installable Click package with explicit
-  noninteractive inputs, JSON-safe analysis, and a BigQuery dry-run path.
+- Change: Extract the original script into a Git-installable Click package with
+  explicit noninteractive inputs, JSON-safe analysis, and a BigQuery dry-run path.
 - Reason: Package ownership, isolated tests, and a pinned install make the tool easier
   to validate and roll back without keeping two executable implementations.
 - Reflected in: `SPEC.md`, `README.md`, and `docs/explanation/architecture.md`.
