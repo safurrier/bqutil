@@ -11,3 +11,7 @@ errors, complete JSON-safe stage records, and null-preserving unavailable plan m
 Focused tests cover each repair. The command still emits only raw operand summaries
 and exact candidate-minus-baseline deltas; it has no optimization label, score,
 threshold, recommendation, action gate, or regression exit code.
+
+The final Codex review identified two follow-ups. Compare now catches both Google API
+and credential failures at the same operand-specific error seam, and the ledger links
+to the committed Markdown schema artifact.

@@ -5,6 +5,7 @@ from types import SimpleNamespace
 
 from click.testing import CliRunner
 from google.api_core.exceptions import GoogleAPICallError
+from google.auth.exceptions import GoogleAuthError
 
 from bqutil.cli import main, resolve_project
 from bqutil.config import load_config
@@ -251,6 +252,50 @@ def test_compare_candidate_fetch_failure_is_actionable_without_traceback(
         "Unable to fetch candidate job 'after' in project 'project' at location 'US'"
         in result.output
     )
+    assert "Check the job ID, location, and BigQuery permissions" in result.output
+    assert "Traceback" not in result.output
+
+
+def test_compare_baseline_auth_failure_is_actionable_without_traceback(
+    monkeypatch,
+) -> None:
+    def fail_baseline(
+        project: str, job_id: str, location: str | None
+    ) -> SimpleNamespace:
+        raise GoogleAuthError("credentials need refresh")
+
+    monkeypatch.setattr("bqutil.cli.get_job", fail_baseline)
+
+    result = CliRunner().invoke(
+        main, ["compare", "project:before", "project:after", "--format", "json"]
+    )
+
+    assert result.exit_code != 0
+    assert "Unable to fetch baseline job 'before' in project 'project'" in result.output
+    assert "Check the job ID, location, and BigQuery permissions" in result.output
+    assert "Traceback" not in result.output
+
+
+def test_compare_candidate_auth_failure_is_actionable_without_traceback(
+    monkeypatch,
+) -> None:
+    baseline = query_job()
+
+    def fail_candidate(
+        project: str, job_id: str, location: str | None
+    ) -> SimpleNamespace:
+        if job_id == "before":
+            return baseline
+        raise GoogleAuthError("credentials need refresh")
+
+    monkeypatch.setattr("bqutil.cli.get_job", fail_candidate)
+
+    result = CliRunner().invoke(
+        main, ["compare", "project:before", "project:after", "--format", "json"]
+    )
+
+    assert result.exit_code != 0
+    assert "Unable to fetch candidate job 'after' in project 'project'" in result.output
     assert "Check the job ID, location, and BigQuery permissions" in result.output
     assert "Traceback" not in result.output
 

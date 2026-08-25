@@ -9,8 +9,8 @@ description: Deterministic validation evidence for compare-jobs.
 ## Commands
 
 - `uv run pytest tests/test_logic.py tests/test_cli.py -q` — focused comparison,
-  operand-failure, and help-contract tests passed.
-- `mise run check` — formatting, Ruff, ty, and 47 pytest tests passed.
+  API and credential operand-failure, and help-contract tests passed.
+- `mise run check` — formatting, Ruff, ty, and 49 pytest tests passed.
 - `uv build` — source distribution and wheel built.
 - Isolated `uv tool install --editable . --force` — root and compare help expose the
   agent workflow and candidate-minus-baseline semantics.
@@ -25,6 +25,8 @@ description: Deterministic validation evidence for compare-jobs.
   development project. JSON parsing confirmed both raw summaries, exact
   candidate-minus-baseline metrics, zero-baseline null percentages, and unavailable
   candidate metrics. The command submitted no BigQuery work and changed no config.
+- The final Codex repair tests prove baseline and candidate authentication failures
+  produce actionable errors without tracebacks.
 
 ## Evidence
 

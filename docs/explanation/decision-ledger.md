@@ -23,7 +23,7 @@ index:
   or losing cache and stage evidence.
 - Reflected in: `SPEC.md`, `README.md`, and `docs/explanation/architecture.md`.
 - Evidence: `.ai/plans/2026-08-25-150538-compare-jobs/artifacts/validation-summary.md`
-  and `.ai/plans/2026-08-25-150538-compare-jobs/artifacts/schema-example.json`.
+  and `.ai/plans/2026-08-25-150538-compare-jobs/artifacts/schema-example.md`.
 
 ### 2026-08-25 — package-bqutil
 

@@ -8,6 +8,7 @@ from typing import Any
 
 import click
 from google.api_core.exceptions import GoogleAPICallError
+from google.auth.exceptions import GoogleAuthError
 from rich.console import Console
 
 from . import __version__
@@ -55,7 +56,7 @@ def fetch_comparison_job(
     """Fetch one comparison operand with an actionable BigQuery failure."""
     try:
         return get_job(project, job_id, location)
-    except GoogleAPICallError as error:
+    except (GoogleAPICallError, GoogleAuthError) as error:
         location_detail = location or "unspecified"
         raise click.ClickException(
             f"Unable to fetch {operand} job '{job_id}' in project '{project}' "

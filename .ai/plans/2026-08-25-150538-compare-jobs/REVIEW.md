@@ -27,6 +27,8 @@ description: External review record for compare-jobs.
 - P1: A selected query-plan stage subset dropped timing, spill, and execution-step
   evidence while public docs called it raw.
 - P1: Missing query-plan metadata became known zero stage metrics.
+- P2: Credential refresh failures bypassed compare's operand-specific error path.
+- P3: The decision ledger referenced a non-existent JSON schema artifact.
 
 ## Disposition
 
@@ -44,3 +46,7 @@ description: External review record for compare-jobs.
   threshold, recommendation, action gate, or nonzero regression exit.
 - A fresh focused follow-up verified every repair against code, tests, and docs. It
   returned `NO FINDING`, found no new bug, and marked the change ready to merge.
+- The final Codex review found credential errors outside the caught Google API class
+  and a stale schema artifact suffix. Compare now catches `GoogleAuthError` with the
+  same operand-specific `ClickException`, tests both operands, and links the Markdown
+  schema artifact.
