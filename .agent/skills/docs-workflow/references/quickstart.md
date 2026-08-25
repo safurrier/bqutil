@@ -12,7 +12,7 @@ Gather these from the user or infer from context:
 
 | Input | Description | Example |
 |-------|-------------|---------|
-| `feature_dir` | Repo-relative path | `discord_ai/models/py/nitro_offer_machine_v2` |
+| `feature_dir` | Repo-relative path | `services/recommendation/models/ranker_v2` |
 | `tech_stack` | Languages, frameworks, services | `Python, Dagster, Ray, BigQuery` |
 | `scope` | Modules covered | `training, scoring, serving surface` |
 | `known_docs` | Existing related docs (optional) | `../readme.md, ../../infra/dagster/README.md` |

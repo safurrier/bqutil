@@ -17,10 +17,10 @@ Required before implementing Harness Kit integration:
 
 ## Extended trial set
 
-- `dread` — small CLI; map should be tiny or explicitly unnecessary.
-- `discord_ai/models/py/ads_relevance_v1` — narrow ML leaf; model artifact/config invariants.
-- `discord_cap` — workflow module; agent/control-plane boundaries.
-- `discord_api` — large monorepo module; should produce only a routing/index-style map unless nested maps are later justified.
+- `sample-cli` — small CLI; map should be tiny or explicitly unnecessary.
+- `ml/models/relevance_v1` — narrow ML leaf; model artifact/config invariants.
+- `workflow_control` — workflow module; agent/control-plane boundaries.
+- `api` — large application module; should produce only a routing/index-style map unless nested maps are later justified.
 
 ## Path-query checks
 

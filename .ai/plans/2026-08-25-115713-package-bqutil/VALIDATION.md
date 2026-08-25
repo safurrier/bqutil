@@ -15,10 +15,10 @@ description: Deterministic, writing, package-install, and live BigQuery evidence
   repairing scaffold-generated indexes.
 - Writing checks ran on README, SPEC, and architecture. Remaining findings are exact
   product headings, normative MUST/SHOULD terms, and defined XDG terminology.
-- `bqutil query select1.sql --project discord-pada-analytics --dry-run` — passed with
-  zero bytes processed.
-- `bqutil query select1.sql --project discord-pada-analytics --preview-rows 1` — real
-  job completed and returned `validation_value = 1`.
+- `bqutil query select1.sql --project <approved-development-project> --dry-run` —
+  passed with zero bytes processed.
+- `bqutil query select1.sql --project <approved-development-project> --preview-rows 1`
+  — real job completed and returned `validation_value = 1`.
 - `bqutil analyze --last --format json` — returned the real completed job and a
   JSON-safe nonempty query plan.
 - Focused regression tests prove `query --analyze` leaves one JSON document on stdout

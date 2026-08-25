@@ -14,6 +14,6 @@ description: Implementation adaptations and verified surprises from the extracti
   the same reviewed source checkout.
 - The first extraction leaked BigQuery query-plan objects into JSON and retained
   no-op options. Specialist reviews found both before live validation.
-- A real dry run and `SELECT 1 AS validation_value` completed in
-  `discord-pada-analytics`; `analyze --last --format json` then serialized the real
+- A real dry run and `SELECT 1 AS validation_value` completed in an approved
+  development project. `analyze --last --format json` then serialized the real
   nonempty query plan successfully.

@@ -43,6 +43,9 @@ description: Agent-friendly CLI and architecture-polish review evidence.
   `analyze --last --format json` against the approved project.
 - Routed the `query --analyze` job line to stderr and moved dry-run conflict checks
   before client construction. Focused regression tests cover both Codex findings.
+- Audited the final public tree for personal and company identifiers. Replaced the
+  development project and scaffold examples with generic public equivalents. Only the
+  intentional `safurrier/bqutil` installation URL remains.
 - Added `analyze --location`, persisted and reused last-job locations, and passed the
   value through the concrete SDK adapter. Query preprocessing now runs for every dry
   run or submission, and tests cover date-only and whitespace-form legacy macros.

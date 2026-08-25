@@ -1,6 +1,6 @@
 # Sync Info
 
-- **Source:** Evolved from `alex-ai/skills/ai-agent-context-files`
-- **Origin:** Internal (dots repo)
+- **Source:** Evolved from an earlier agent-context workflow
+- **Origin:** Harness Scaffold vendored skill
 - **Created:** 2026-03-01
-- **Via:** manual redesign incorporating PR feedback, agent-scaffold patterns, and dots repo conventions
+- **Via:** manual redesign incorporating PR feedback and agent-scaffold patterns
