@@ -12,20 +12,28 @@ index:
 
 # Decision Ledger
 
-Append-only record for durable slice decisions.
+## Ledger
 
-## Entry Format
+### 2026-08-25 — package-bqutil
 
-Each entry should include:
+- Plan: `.ai/plans/2026-08-25-115713-package-bqutil/`
+- Change: Extract the Dots script into a Git-installable Click package with explicit
+  noninteractive inputs, JSON-safe analysis, and a BigQuery dry-run path.
+- Reason: Package ownership, isolated tests, and a pinned install make the tool easier
+  to validate and roll back without keeping two executable implementations.
+- Reflected in: `SPEC.md`, `README.md`, and `docs/explanation/architecture.md`.
+- Evidence: `.ai/plans/2026-08-25-115713-package-bqutil/artifacts/validation-summary.md`
+  and `.ai/plans/2026-08-25-115713-package-bqutil/artifacts/review-summary.md`.
 
-- date + slice slug
+Append new durable slice decisions here. Don't rewrite prior entries during normal
+agent work. Use ADRs under `decisions/` when a decision needs a fuller record.
+
+## Format
+
+Each entry includes:
+
+- date and slice slug
 - plan path
-- what changed
-- why
-- where reflected
-- evidence
-
-## Notes
-
-- Append new entries; do not rewrite history in normal agent flows.
-- Use ADRs under `decisions/` when a change needs a fuller record.
+- what changed and why
+- where the decision appears in current documentation
+- supporting evidence

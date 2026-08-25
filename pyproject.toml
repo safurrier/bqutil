@@ -1,12 +1,23 @@
 [project]
 name = "bqutil"
 version = "0.1.0"
-description = "A bqutil project"
+description = "Execute BigQuery SQL files and analyze BigQuery jobs"
 license = "MIT"
 requires-python = ">=3.12"
-dependencies = []
+dependencies = [
+    "click>=8.0",
+    "google-cloud-bigquery>=3.0",
+    "google-cloud-bigquery-storage>=2.0",
+    "pandas>=2.0",
+    "pyarrow>=14.0",
+    "rich>=13.0",
+    "db-dtypes>=1.0",
+]
 
-[project.optional-dependencies]
+[project.scripts]
+bqutil = "bqutil.cli:main"
+
+[dependency-groups]
 dev = [
     "pytest>=8.0",
     "pytest-cov>=5.0",
@@ -47,6 +58,9 @@ ignore = [
     "E501",  # line too long (formatter handles this)
     "S101",  # assert usage (needed in tests)
 ]
+
+[tool.ruff.lint.per-file-ignores]
+"bqutil/gcp.py" = ["S607"] # gcloud is intentionally resolved from the user's PATH.
 
 [tool.ruff.lint.isort]
 known-first-party = ["bqutil"]

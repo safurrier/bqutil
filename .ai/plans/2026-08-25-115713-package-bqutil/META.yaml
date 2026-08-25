@@ -1,0 +1,18 @@
+slug: package-bqutil
+branch: feature/package-bqutil
+created: 2026-08-25
+pr:
+status: complete
+source: supervised-development
+contract_change: contract_changed
+decision_record: ledger
+review_mode: external_required
+review_backend: subagent
+review_rubrics:
+  - core-quality
+  - docs-info-architecture
+evidence_required:
+  - commands
+  - report
+continues_from:
+supersedes:

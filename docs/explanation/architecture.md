@@ -1,145 +1,62 @@
 ---
 id: bqutil-architecture
-title: bqutil Architecture
-description: >
-  Durable system record for bqutil: invariants, principles, cross-cutting
-  workflows, and architectural decisions. Read before implementing.
+title: bqutil architecture
+description: Module ownership and execution flows for the bqutil CLI.
 index:
   - id: system-overview
-    keywords: [components, data-flows, trust-boundaries, modules]
-  - id: invariants-boundaries
-    keywords: [invariants, security, migrations, worktree-safety, observability, idempotent]
-  - id: principles-patterns
-    keywords: [patterns, principles, service-layer, timeouts, logs]
-  - id: cross-cutting-workflows
-    keywords: [validation-loop, check, sync-check, verify, artifacts]
-  - id: decisions
-    keywords: [ledger, adrs, decisions, truth-hierarchy]
-  - id: where-human-thought-goes
-    keywords: [human-ownership, agent-ownership, promotion-rules]
+    keywords: [modules, ownership, sdk, configuration]
+  - id: primary-flows
+    keywords: [query, dry-run, analyze, execution]
+  - id: invariants
+    keywords: [json, state, automation, adapter]
+  - id: validation
+    keywords: [tests, build, live-query]
 ---
 
-# bqutil — Architecture
+# bqutil architecture
 
-> This document is the durable system of record for invariants, principles, and decisions.
-> Keep it updated as the system evolves. Agents: read this before implementing.
+## System overview
 
-## 1. System Overview
+bqutil is a single-process Click CLI. It owns local configuration and terminal
+rendering. The Google BigQuery SDK and the caller's credentials continue to own
+Google Cloud authentication, query execution, and job metadata.
 
-**Stack**: python
-
-### Components
-
-| Component | Purpose |
+| Module | Responsibility |
 |---|---|
-| <!-- name --> | <!-- purpose --> |
+| `bqutil.cli` | Command parsing, project resolution, stdout/stderr contracts, and workflow order |
+| `bqutil.config` | XDG Base Directory JSON state: default project and last submitted job |
+| `bqutil.gcp` | The one concrete `gcloud` and BigQuery SDK adapter |
+| `bqutil.query` | Legacy macro preprocessing, query submission, dry-run setup, and bounded row access |
+| `bqutil.analysis` | JSON-primitive query-plan summaries |
 
-### Primary Data Flows
+## Primary flows
 
-1. <!-- flow 1 -->
+1. `query` resolves a project, reads and optionally preprocesses SQL, then either
+   sends a BigQuery dry-run job or submits a real job.
+2. A real query waits for completion and records its job identity before any local
+   export or preview. This preserves recovery information if a filesystem operation
+   fails.
+3. `analyze` fetches an existing job through the concrete adapter and maps the SDK
+   object to terminal text or JSON-safe records.
 
-### Trust Boundaries
+## Invariants
 
-- <!-- boundary 1 -->
+- CLI functions are the ingress seam. Domain modules stay independent of Click.
+- The BigQuery adapter stays concrete because the package has one SDK integration,
+  not a plugin or protocol framework. Tests replace calls at that module seam.
+- JSON output never contains raw SDK objects.
+- Dry runs are non-executing estimates that leave bqutil state unchanged.
+- Interactive selection isn't supported. Every automation input has an argument,
+  flag, configuration value, or actionable error.
 
-## 2. Goals / Non-Goals
-
-**Goals**
-
-- <!-- goal 1 -->
-
-**Non-Goals**
-
-- <!-- non-goal 1 -->
-
-## 3. Invariants & Boundaries
-
-> These rules prevent catastrophic mistakes. Violating them requires a ledger
-> entry at minimum, and sometimes an ADR.
-
-### Worktree Safety
-
-- All services must start and all tests must pass from a clean checkout or Git worktree.
-- No reliance on undeclared local artifacts outside tracked repos or declared build outputs.
-
-### Validation Boundaries
-
-- `mise run check` stays fast and deterministic.
-- `mise run sync-check` proves a slice is not half done.
-- `mise run verify` is reserved for heavier validation that should not slow the inner loop.
-
-### Traceability
-
-- Durable behavior changes must be reflected in docs, not only in plan logs.
-- Review artifacts and validation evidence live alongside the active plan until handoff.
-
-## 4. Principles & Preferred Patterns
-
-- Prefer one active in-progress plan per branch.
-- Prefer repo-enforced checks over purely prompt-based process.
-- Prefer append-only decision history over silent rewrites.
-- Prefer explicit evidence artifacts over "trust me, I tested it."
-
-## 5. Cross-Cutting Workflows
-
-### Validation Loop
+## Validation
 
 ```bash
-mise run check       # fast code quality gate
-mise run sync-check  # plan/spec/evidence/review handoff gate
-mise run verify      # heavier validation
+mise run check
+uv run pytest -q
+uv run ruff check bqutil tests
+uv build
 ```
 
-### Artifact-First Debugging
-
-When a slice needs screenshots, logs, reports, benchmarks, or similar proof,
-declare those artifact types in `META.yaml` first, then persist them under the
-active plan's `artifacts/` directory and list them in `artifacts/manifest.yaml`.
-
-## 6. Decisions
-
-Durable decisions have two levels:
-
-1. `docs/explanation/decision-ledger.md` for most slice-level decisions
-2. `docs/explanation/decisions/` for ADRs when a larger invariant or boundary changes
-
-**Truth hierarchy**:
-
-1. CI and tooling enforcement
-2. ADRs in `docs/explanation/decisions/`
-3. Decision ledger entries in `docs/explanation/decision-ledger.md`
-4. This document and other repo docs
-5. Plan-local notes in `.ai/plans/`
-
-**Index**:
-
-| Decision Record | Purpose |
-|---|---|
-| [0001-stack-choice](decisions/0001-stack-choice.md) | Initial stack choice for bqutil |
-| [decision-ledger](decision-ledger.md) | Append-only durable slice history |
-
-## 7. Module Map
-
-| Module | Purpose | Docs |
-|---|---|---|
-| <!-- module --> | <!-- purpose --> | — |
-
-## 8. Where Human Thought Goes
-
-**Humans define**
-
-- invariants and boundary changes
-- review standards and taste rubrics
-- what counts as durable knowledge in docs
-
-**Agents own**
-
-- implementing within those constraints
-- keeping the active plan current
-- producing evidence and review artifacts before handoff
-
-**Promotion rules**
-
-- Slice-local reasoning starts in `.ai/plans/<slice>/DECISIONS.md`
-- `decision_record: ledger` means append a repo-level ledger entry before handoff
-- `decision_record: adr` means create or update an ADR before handoff
+A credentialed live query is an explicit operational smoke test, not a routine test
+suite requirement, because it can create jobs and incur charges.

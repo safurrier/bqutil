@@ -12,10 +12,12 @@ index:
 
 # Core Quality
 
-Review for:
+## Correctness
 
-- correctness and regression risk
-- contract drift against `SPEC.md` and architecture docs
-- missing validation or evidence
-- incomplete edge-case coverage
-- needless complexity or unclear ownership
+Review behavior against `SPEC.md`, regression tests, edge cases, and recorded
+validation evidence.
+
+## Maintainability
+
+Review ownership, unnecessary complexity, and drift between code and architecture
+documentation.

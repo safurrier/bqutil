@@ -1,0 +1,10 @@
+artifacts:
+  - type: report
+    path: artifacts/review-summary.md
+    note: Specialist findings and repair disposition
+  - type: report
+    path: artifacts/validation-summary.md
+    note: Deterministic, package-install, and live BigQuery evidence
+  - type: report
+    path: artifacts/writing-dispositions.md
+    note: Source-bound writing-check findings and exact-source dispositions
