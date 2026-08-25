@@ -1,5 +1,6 @@
 """Command-level compatibility and output-contract tests."""
 
+import json
 from types import SimpleNamespace
 
 from click.testing import CliRunner
@@ -72,9 +73,7 @@ def test_missing_gcloud_returns_actionable_usage_error(monkeypatch, tmp_path) ->
     assert "Pass --project" in result.output
 
 
-def test_analyze_json_llm_and_query_analyze_are_json_safe(
-    monkeypatch, tmp_path
-) -> None:
+def test_analyze_json_and_llm_are_json_safe(monkeypatch, tmp_path) -> None:
     monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path))
     job = query_job()
     monkeypatch.setattr("bqutil.cli.get_job", lambda project, job_id: job)
@@ -86,16 +85,26 @@ def test_analyze_json_llm_and_query_analyze_are_json_safe(
         result = runner.invoke(main, args)
         assert result.exit_code == 0, result.output
         assert '"entry_id": "1"' in result.output
+
+
+def test_query_analyze_writes_one_json_document_to_stdout(
+    monkeypatch, tmp_path
+) -> None:
+    monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path))
     sql = tmp_path / "query.sql"
     sql.write_text("SELECT 1")
+    job = query_job()
     monkeypatch.setattr("bqutil.cli.client", lambda project: object())
     monkeypatch.setattr("bqutil.cli.run_query", lambda sql, client: (job, 0.1))
     monkeypatch.setattr("bqutil.cli.preview_rows", lambda job, limit: [])
-    result = runner.invoke(
+
+    result = CliRunner().invoke(
         main, ["query", str(sql), "--project", "project", "--analyze"]
     )
+
     assert result.exit_code == 0, result.output
-    assert '"entry_id": "1"' in result.output
+    assert json.loads(result.stdout)["job_id"] == "job"
+    assert "Job ID: job" in result.stderr
 
 
 def test_analyze_verbose_and_debug_render_stable_details(monkeypatch) -> None:
@@ -132,6 +141,32 @@ def test_dry_run_never_persists_or_executes(monkeypatch, tmp_path) -> None:
     )
     assert rejected.exit_code != 0
     assert "cannot be combined" in rejected.output
+
+
+def test_dry_run_conflicts_precede_client_creation(monkeypatch, tmp_path) -> None:
+    sql = tmp_path / "query.sql"
+    sql.write_text("SELECT 1")
+    monkeypatch.setattr(
+        "bqutil.cli.client",
+        lambda project: (_ for _ in ()).throw(AssertionError("client created")),
+    )
+
+    result = CliRunner().invoke(
+        main,
+        [
+            "query",
+            str(sql),
+            "--project",
+            "project",
+            "--dry-run",
+            "--output",
+            str(tmp_path / "out.csv"),
+        ],
+    )
+
+    assert result.exit_code != 0
+    assert "--dry-run cannot be combined with --output" in result.output
+    assert "client created" not in result.output
 
 
 def test_query_persists_before_export_and_previews(monkeypatch, tmp_path) -> None:

@@ -239,7 +239,6 @@ def query(
         sql = replace_dbt_refs(sql, project)
     if verbose:
         console.print(sql)
-    bq_client = client(project)
     if dry_run:
         context = click.get_current_context()
         preview_set = (
@@ -250,7 +249,7 @@ def query(
             raise click.UsageError(
                 "--dry-run cannot be combined with --output, --analyze, --preview-rows, or --set-default-project."
             )
-        job = dry_run_query(sql, bq_client)
+        job = dry_run_query(sql, client(project))
         click.echo(
             json.dumps(
                 {
@@ -265,13 +264,18 @@ def query(
             )
         )
         return
+    bq_client = client(project)
     job, elapsed = run_query(sql, bq_client)
     config = load_config()
     config.update({"last_job_id": job.job_id, "last_job_project": project})
     if set_default_project:
         config["default_project"] = project
     save_config(config)
-    click.echo(f"Job ID: {job.job_id} ({elapsed:.2f}s)")
+    job_status = f"Job ID: {job.job_id} ({elapsed:.2f}s)"
+    if analyze_after:
+        console.print(job_status)
+    else:
+        click.echo(job_status)
     if output:
         frame = job.to_dataframe()
         suffix = output.suffix.lower()

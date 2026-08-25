@@ -8,7 +8,7 @@ description: Deterministic, writing, package-install, and live BigQuery evidence
 
 ## Commands
 
-- `mise run check` — format, Ruff, ty, and 28 pytest tests passed.
+- `mise run check` — format, Ruff, ty, and 30 pytest tests passed.
 - `uv build` — source distribution and wheel built.
 - Isolated `uv tool install --editable . --force` — version and command help passed.
 - Context contracts, frontmatter, references, and AGENTS depth checks passed after
@@ -21,6 +21,8 @@ description: Deterministic, writing, package-install, and live BigQuery evidence
   job completed and returned `validation_value = 1`.
 - `bqutil analyze --last --format json` — returned the real completed job and a
   JSON-safe nonempty query plan.
+- Focused regression tests prove `query --analyze` leaves one JSON document on stdout
+  and dry-run conflicts fail before credentialed client construction.
 
 ## Evidence
 
