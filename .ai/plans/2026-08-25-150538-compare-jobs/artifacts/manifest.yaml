@@ -1,0 +1,13 @@
+artifacts:
+  - type: report
+    path: artifacts/validation-summary.md
+    note: Focused, scaffold, build, and install evidence
+  - type: report
+    path: artifacts/writing-dispositions.md
+    note: Source-bound writing-check dispositions for changed authored documents
+  - type: example
+    path: artifacts/schema-example.md
+    note: Candidate-minus-baseline JSON schema shape
+  - type: report
+    path: artifacts/review-summary.md
+    note: Agent-friendly CLI and heuristic-authority review disposition

@@ -38,6 +38,9 @@ then update the active scaffold plan and run the sync contract before handoff.
 - **DO** use `--dry-run` before unfamiliar SQL and an explicitly approved project for
   a live smoke test. **NOT** treat dry-run proof as permission to execute arbitrary
   SQL. **BECAUSE** caller-supplied SQL retains authority over billing and mutations.
+- **DO** preserve both jobs' raw summaries and explicit candidate-minus-baseline
+  deltas in comparisons. **NOT** add optimization labels, thresholds, or exit-code
+  gates. **BECAUSE** agents need the source evidence to make context-specific choices.
 
 ## Related Context
 
