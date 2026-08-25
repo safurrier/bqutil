@@ -12,9 +12,11 @@ index:
 
 # UI and UX
 
-Review for:
+## Interaction
 
-- operator clarity and information hierarchy
-- interaction friction and keyboard flow
-- visual consistency with the repo's established design language
-- missing states, error handling, and empty-state behavior
+Review command flow, keyboard ergonomics, and handling for errors or empty states.
+
+## Clarity
+
+Review operator-facing hierarchy, terminology, and consistency with documented CLI
+output contracts.

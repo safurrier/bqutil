@@ -73,11 +73,11 @@ def test_agents_md_exists() -> None:
 
 
 def test_agents_md_has_required_sections() -> None:
-    """AGENTS.md must have WHY/WHAT/HOW structure."""
+    """AGENTS.md must carry the lean steering contract."""
     content = (PROJECT_ROOT / "AGENTS.md").read_text()
-    assert "## WHY" in content
-    assert "## WHAT" in content
-    assert "## HOW" in content
+    assert "## Commands" in content
+    assert "## Gotchas" in content
+    assert "generated-by: context-engineering@" in content
 
 
 def test_agents_md_has_no_frontmatter() -> None:

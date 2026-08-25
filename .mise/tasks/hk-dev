@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+# MISE description="Run the current checkout's hk CLI for dogfood/dev"
+set -euo pipefail
+exec "$MISE_PROJECT_ROOT/scripts/hk-dev" "$@"

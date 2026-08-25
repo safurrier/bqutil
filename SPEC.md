@@ -1,93 +1,89 @@
----
-id: bqutil-spec
-title: bqutil Specification
-description: >
-  Correctness envelope — requirements, contracts, and invariants
-  for bqutil.
-index:
-  - id: requirements
-    keywords: [must, should, may, behavioral, requirements]
-  - id: interfaces
-    keywords: [api, contracts, boundaries, modules, io]
-  - id: invariants
-    keywords: [state, safety, data, rules, boundaries, always-true]
----
-
-# bqutil — Specification
-
-> This document defines the correctness envelope: what must be true about any
-> valid implementation. For how the system works now, see `docs/explanation/architecture.md`.
-> For how to work in this repo, see `AGENTS.md`.
+# bqutil correctness envelope
 
 ## Summary
 
-<!-- What this project is, in one paragraph. -->
+bqutil is a Click CLI that submits BigQuery SQL files, performs BigQuery dry runs,
+and renders existing query-job information. It keeps local project and job state so
+users can recover and inspect a completed query without submitting it again.
 
 ## Goals / Non-Goals
 
-**Goals:**
+### Goals
 
-- <!-- What the system optimizes for -->
+- Provide explicit, automation-safe commands for query execution and job analysis.
+- Preserve a recoverable job ID before local export or preview work.
+- Keep machine-readable output free of terminal rendering and BigQuery SDK objects.
 
-**Non-Goals:**
+### Non-goals
 
-- <!-- Explicit exclusions — what this project will NOT do -->
+- Authorize SQL or protect users from mutations contained in supplied SQL.
+- Replace dbt, the BigQuery console, or Google Cloud authentication.
+- Provide an interactive project or job browser.
 
 ## Requirements
 
-<!-- Behavioral requirements using normative language. -->
-<!-- For small projects: list requirements directly. -->
-<!-- For larger projects: link to docs/requirements/ for module-specific requirements. -->
-
 ### MUST
 
-- `mise run check` passes on a freshly initialized project without manual intervention
-- `mise run ci` produces identical results to `mise run check`
+- The `bqutil` console entry point exposes `config`, `query`, and `analyze`.
+- Project resolution uses explicit `--project`, then saved XDG Base Directory
+  configuration, then `gcloud` configuration. If none is available, the command
+  exits with a Click usage error and explicit remediation. A missing `gcloud`
+  executable never produces a traceback.
+- Configuration remains `$XDG_CONFIG_HOME/bqutil/config.json` with
+  `default_project`, `last_job_id`, `last_job_project`, and `last_job_location` keys.
+- `query --dry-run` sends a `QueryJobConfig` with `dry_run=True` and
+  `use_query_cache=False`. It doesn't wait for result rows or alter saved job state.
+- A real query records its job ID, project, and BigQuery location before local export
+  or preview work.
+- `--preview-rows` reads at most the requested number of result rows.
+- JSON and large language model output contains JSON primitives only, including
+  query-plan summaries.
+- Diagnostic output, SQL previews, and result previews use stderr. Structured
+  `analyze` output uses stdout.
+- Output selection is CSV, JSON Lines, or Parquet by suffix. The command records the
+  job before reporting a Parquet or other local export failure.
 
 ### SHOULD
 
-- <!-- Expected but not strictly required behaviors -->
-
-### MAY
-
-- <!-- Optional behaviors -->
+- `analyze --verbose` reports query-plan stage and bottleneck counts.
+- `analyze --debug` renders only documented, stable source-job attributes.
+- Every command help page includes a copyable example with an explicit project.
+- Tests use fake BigQuery clients and jobs. Routine validation never submits a real
+  BigQuery operation.
 
 ## Interfaces & Contracts
 
-<!-- Public APIs, module boundaries, I/O shapes, CLI surfaces. -->
-<!-- For small projects: describe inline. -->
-<!-- For larger projects: link to API specs, OpenAPI docs, or module contracts. -->
-
-**Task contract:**
-
-| Command | Purpose |
-|---------|---------|
-| `mise run check` | Fast quality gate (fmt + lint + typecheck + test) |
-| `mise run slice-plan` | Render planner prompt for the active slice |
-| `mise run slice-implement` | Render implementer prompt for the active slice |
-| `mise run slice-review` | Render reviewer prompt for the active slice |
-| `mise run slice-status` | Show active slice status, with JSON for automation |
-| `mise run sync-check` | Handoff gate for plan/spec/evidence/review completeness |
-| `mise run verify` | Heavy validation (integration, docker, security) |
-| `mise run ci` | CI entrypoint (delegates to `check`) |
+- `config --set-project/--show/--reset` owns persistent local state.
+- `query QUERY_FILE` accepts `--project`, `--dry-run`, `--preview-rows`, `--output`,
+  `--analyze`, `--verbose`, and `--set-default-project`.
+- `analyze JOB_ID` accepts `PROJECT:JOB_ID`, `--project`, `--location`, `--last`,
+  `--format json`, `--llm`, `--verbose`, and `--debug`.
+- `analyze --last` reuses the saved job location. Callers can provide `--location`
+  when inspecting a job that was not recorded locally.
+- Interactive selection isn't part of the package interface because it blocks
+  non-interactive callers.
+- Legacy dbt rewriting remains documented, opinionated preprocessing rather than a
+  general dbt implementation. It runs for every submitted query so supported date-only
+  macros and whitespace-form `ref()` calls are not skipped.
 
 ## Invariants
 
-<!-- Rules that must always hold — violating these requires an ADR. -->
-<!-- Heuristic: if CI can prove or falsify it, it belongs here. -->
-<!-- For module-scoped invariants in larger projects, link to apps/<mod>/SPEC.md -->
-
-- All services must start and all tests must pass from a **clean checkout or Git worktree**.
-- CI and local checks use the **same entrypoints** — no divergence.
-- Meaningful slices are not done until `mise run sync-check` passes with a current
-  plan, validation evidence, and external-enough review.
+- Dry runs don't create result rows or change bqutil state.
+- JSON output never contains raw SDK objects or Rich terminal rendering.
+- A completed real query's identity and location are durable before local export and
+  preview work.
+- The caller's credentials and supplied SQL retain authority over BigQuery access,
+  billing, and table mutations.
 
 ## Acceptance
 
-<!-- How to verify this spec is satisfied. Points to test commands and CI gates. -->
-
 ```bash
-mise run check    # fast: fmt + lint + typecheck + test
-mise run sync-check   # plan/spec/evidence/review completion gate
-mise run verify   # heavy: integration, e2e, docker, security
+mise run check
+uv run pytest -q
+uv run ruff check bqutil tests
+uv build
 ```
+
+A release candidate also requires an isolated Git-source installation smoke test. A
+credentialed live `SELECT 1` is explicit operational evidence, not a routine test,
+because it creates a BigQuery job and can incur charges.

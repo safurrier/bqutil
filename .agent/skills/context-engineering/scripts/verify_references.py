@@ -39,11 +39,11 @@ SKIP_PATTERNS = [
     r"^gs://",
     r"^gcr\.io/",
     r"^docker\.io/",
-    # Domain-like patterns (e.g., discord.dagster.cloud/, pkg.go.dev/)
+    # Domain-like patterns (e.g., jobs.example.com/, pkg.go.dev/)
     r"^\w+\.\w+\.\w+/",
     # Python decorators (e.g., @pytest.mark.e2e)
     r"^@",
-    # GitHub org/repo format (e.g., safurrier/ai-config) — single slash, no file extension
+    # GitHub org/repo format (e.g., example-org/example-tool) — single slash, no file extension
     r"^[a-zA-Z0-9_-]+/[a-zA-Z0-9_-]+$",
     # Dotfile/output directory paths (e.g., .codex/, .claude/, .groundskeeper/)
     # These describe tool output in the user's home dir, not repo paths

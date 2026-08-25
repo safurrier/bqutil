@@ -1,6 +1,6 @@
 ---
 name: hk-config-authoring
-description: Router skill for Harness Kit config authoring and maintenance. Use when a user asks to create, audit, update, or repair HK profiles, system maps, target bindings, or dots/user-level harness.toml config. Delegates to profile and system-map authoring skills instead of duplicating their logic.
+description: Router skill for Harness Kit config authoring and maintenance. Use when a user asks to create, audit, update, or repair HK profiles, system maps, target bindings, or user-level harness.toml config. Delegates to profile and system-map authoring skills instead of duplicating their logic.
 allowed-tools: Read, Grep, Glob, Bash, Write
 ---
 
@@ -16,7 +16,7 @@ This is a router. It decides which specialized workflow to run and keeps profile
 - `harness-kit-profile-authoring` owns profile checks/reviews/requiredness guidance.
 - `hk-system-map-author` owns component/invariant/read-before-editing/check-label maps.
 - Humans or explicit agent instructions approve writes.
-- Do not edit deployed runtime `~/.config` files directly when dots/config source exists.
+- Do not edit deployed runtime `~/.config` files directly when a managed config source exists.
 
 ## Route the request
 
@@ -30,7 +30,7 @@ Ask or infer:
    - all of the above? → paired flow
 3. Where should changes live?
    - repo-local `.harness/`
-   - user/dots `config/harness-toolkit/`
+   - user-managed `config/harness-toolkit/`
    - generated template skill/config
    - proposal only / temp file
 
@@ -89,7 +89,7 @@ system_map = "system-maps/<target-name>.toml"
 
 Mode: create | audit/update
 Target: `<target>`
-Config location: repo-local | dots/user | template | proposal-only
+Config location: repo-local | user-managed | template | proposal-only
 
 ### Diagnostics used
 

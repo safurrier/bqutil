@@ -12,8 +12,12 @@ index:
 
 # Performance
 
-Review for:
+## Performance
 
-- whether the change introduces obvious hot-path regressions
-- whether benchmark or profiling evidence is present when performance matters
-- whether resource costs are proportional to the feature gain
+Review whether a change introduces hot-path regressions or disproportionate
+resource costs.
+
+## Evidence
+
+Require benchmark or profiling evidence only when the changed behavior makes
+performance material.

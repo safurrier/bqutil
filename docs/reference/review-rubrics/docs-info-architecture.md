@@ -12,9 +12,12 @@ index:
 
 # Docs and Information Architecture
 
-Review for:
+## Docs
 
-- whether new durable knowledge was promoted out of plan-local notes
-- whether doc updates landed in the right intent folder
-- whether AGENTS, explanation docs, and reference docs point to the same truth
-- whether the decision trail is readable after the slice lands
+Review whether documentation lives in the right intent folder and whether
+`AGENTS.md`, explanation docs, and reference docs agree.
+
+## Promotion
+
+Review whether durable knowledge moved out of plan-local notes and whether the
+decision trail remains readable after the slice lands.
