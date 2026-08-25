@@ -8,7 +8,7 @@ description: Deterministic, writing, package-install, and live BigQuery evidence
 
 ## Commands
 
-- `mise run check` — format, Ruff, ty, and 30 pytest tests passed.
+- `mise run check` — format, Ruff, ty, and 36 pytest tests passed.
 - `uv build` — source distribution and wheel built.
 - Isolated `uv tool install --editable . --force` — version and command help passed.
 - Context contracts, frontmatter, references, and AGENTS depth checks passed after
@@ -26,6 +26,8 @@ description: Deterministic, writing, package-install, and live BigQuery evidence
 - The GitHub repair tests prove explicit and saved BigQuery locations reach job
   lookups, old configs normalize the missing location key, project-qualified IDs still
   work, and date-only or whitespace-form macros are preprocessed before submission.
+- A final credentialed `SELECT 1` saved `last_job_location = "US"`, and
+  `analyze --last --format json` retrieved the completed job through that location.
 
 ## Evidence
 
