@@ -29,8 +29,8 @@ prompt.
 ## Configure a default project
 
 bqutil stores JSON at `$XDG_CONFIG_HOME/bqutil/config.json`. The default path is
-`~/.config/bqutil/config.json`. The file stores `default_project`, `last_job_id`, and
-`last_job_project`.
+`~/.config/bqutil/config.json`. The file stores `default_project`, `last_job_id`,
+`last_job_project`, and `last_job_location`.
 
 ```bash
 bqutil config --set-project my-project
@@ -56,10 +56,10 @@ Dry runs reject `--output`, `--analyze`, `--preview-rows`, and
 # Run SQL and print at most ten preview rows to stderr.
 bqutil query report.sql --project my-project --preview-rows 10
 
-# Analyze a known job as JSON.
-bqutil analyze my-project:job_id --format json
+# Analyze a known job as JSON. Add --location for non-US/EU job locations.
+bqutil analyze my-project:job_id --location asia-northeast1 --format json
 
-# Analyze the last query recorded in this config file.
+# Analyze the last query recorded in this config file, including its saved location.
 bqutil analyze --last --format json
 ```
 
@@ -93,8 +93,9 @@ The package omits the predecessor script's interactive project and job picker. P
 an explicit project and job ID for automation-safe behavior.
 
 The legacy dbt macro replacement is narrow. `ref()` resolves to
-`PROJECT.dbt_testing.TABLE`. The `start_date()` and `end_date()` macros use local
-calendar dates. Review transformed SQL with `--verbose` before executing it.
+`PROJECT.dbt_testing.TABLE`, including whitespace around `ref`. The `start_date()` and
+`end_date()` macros use local calendar dates even when a query has no `ref()` macro.
+Review transformed SQL with `--verbose` before executing it.
 
 ## Development
 

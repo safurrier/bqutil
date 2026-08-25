@@ -3,7 +3,7 @@
 from types import SimpleNamespace
 
 from bqutil.analysis import analyze_query_plan, format_bytes
-from bqutil.gcp import current_project
+from bqutil.gcp import current_project, get_job
 from bqutil.query import replace_dbt_refs
 
 
@@ -15,6 +15,14 @@ def test_dbt_rewrite_preserves_legacy_destination() -> None:
     assert "`p.dbt_testing.orders`" in replace_dbt_refs(
         "select * from {{ ref('orders') }}", "p"
     )
+
+
+def test_dbt_rewrite_handles_whitespace_refs_and_date_only_macros() -> None:
+    whitespace_ref = replace_dbt_refs("select * from {{  ref('orders') }}", "p")
+    date_only = replace_dbt_refs("select {{ start_date() }}, {{ end_date() }}", "p")
+
+    assert "`p.dbt_testing.orders`" in whitespace_ref
+    assert "{{" not in date_only
 
 
 def test_plan_analysis_returns_primitive_stage_records() -> None:
@@ -42,6 +50,24 @@ def test_plan_analysis_returns_primitive_stage_records() -> None:
         }
     ]
     assert result["bottlenecks"][0]["type"] == "time"
+
+
+def test_get_job_passes_location_to_bigquery_client(monkeypatch) -> None:
+    captured: dict[str, str | None] = {}
+
+    class FakeClient:
+        def get_job(self, job_id: str, project: str, location: str | None) -> str:
+            captured.update(job_id=job_id, project=project, location=location)
+            return "job"
+
+    monkeypatch.setattr("bqutil.gcp.client", lambda project: FakeClient())
+
+    assert get_job("project", "job", "asia-northeast1") == "job"
+    assert captured == {
+        "job_id": "job",
+        "project": "project",
+        "location": "asia-northeast1",
+    }
 
 
 def test_current_project_handles_missing_gcloud(monkeypatch) -> None:

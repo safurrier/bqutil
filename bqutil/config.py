@@ -11,6 +11,7 @@ DEFAULT_CONFIG = {
     "default_project": None,
     "last_job_id": None,
     "last_job_project": None,
+    "last_job_location": None,
 }
 
 

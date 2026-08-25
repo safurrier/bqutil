@@ -45,10 +45,9 @@ def test_version_and_command_examples() -> None:
     runner = CliRunner()
     assert "0.1.0" in runner.invoke(main, ["--version"]).output
     assert "--dry-run" in runner.invoke(main, ["query", "--help"]).output
-    assert (
-        "analyze --last --format json"
-        in runner.invoke(main, ["analyze", "--help"]).output
-    )
+    analyze_help = runner.invoke(main, ["analyze", "--help"]).output
+    assert "--location LOCATION" in analyze_help
+    assert "analyze --last" in analyze_help
     assert "config --set-project" in runner.invoke(main, ["config", "--help"]).output
 
 
@@ -65,6 +64,83 @@ def test_config_round_trip(monkeypatch, tmp_path) -> None:
     )
 
 
+def test_analyze_passes_explicit_location_with_project_qualified_job(
+    monkeypatch,
+) -> None:
+    job = query_job()
+    captured: dict[str, str | None] = {}
+
+    def fetch(project: str, job_id: str, location: str | None) -> SimpleNamespace:
+        captured.update(project=project, job_id=job_id, location=location)
+        return job
+
+    monkeypatch.setattr("bqutil.cli.get_job", fetch)
+    result = CliRunner().invoke(
+        main,
+        [
+            "analyze",
+            "project:job",
+            "--location",
+            "asia-northeast1",
+            "--format",
+            "json",
+        ],
+    )
+
+    assert result.exit_code == 0, result.output
+    assert captured == {
+        "project": "project",
+        "job_id": "job",
+        "location": "asia-northeast1",
+    }
+
+
+def test_analyze_last_uses_saved_location_and_old_config_defaults_to_none(
+    monkeypatch, tmp_path
+) -> None:
+    monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path))
+    config_path = tmp_path / "bqutil" / "config.json"
+    config_path.parent.mkdir()
+    config_path.write_text('{"last_job_id": "old-job", "last_job_project": "project"}')
+    assert load_config()["last_job_location"] is None
+
+    captured: dict[str, str | None] = {}
+    monkeypatch.setattr(
+        "bqutil.cli.get_job",
+        lambda project, job_id, location: (
+            captured.update(project=project, job_id=job_id, location=location)
+            or query_job()
+        ),
+    )
+    result = CliRunner().invoke(main, ["analyze", "--last", "--format", "json"])
+
+    assert result.exit_code == 0, result.output
+    assert captured["location"] is None
+
+
+def test_analyze_last_reuses_persisted_location(monkeypatch, tmp_path) -> None:
+    monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path))
+    config_path = tmp_path / "bqutil" / "config.json"
+    config_path.parent.mkdir()
+    config_path.write_text(
+        '{"last_job_id": "job", "last_job_project": "project", '
+        '"last_job_location": "asia-northeast1"}'
+    )
+    captured: dict[str, str | None] = {}
+    monkeypatch.setattr(
+        "bqutil.cli.get_job",
+        lambda project, job_id, location: (
+            captured.update(project=project, job_id=job_id, location=location)
+            or query_job()
+        ),
+    )
+
+    result = CliRunner().invoke(main, ["analyze", "--last", "--format", "json"])
+
+    assert result.exit_code == 0, result.output
+    assert captured["location"] == "asia-northeast1"
+
+
 def test_missing_gcloud_returns_actionable_usage_error(monkeypatch, tmp_path) -> None:
     monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path))
     monkeypatch.setattr("bqutil.cli.current_project", lambda: None)
@@ -76,7 +152,7 @@ def test_missing_gcloud_returns_actionable_usage_error(monkeypatch, tmp_path) ->
 def test_analyze_json_and_llm_are_json_safe(monkeypatch, tmp_path) -> None:
     monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path))
     job = query_job()
-    monkeypatch.setattr("bqutil.cli.get_job", lambda project, job_id: job)
+    monkeypatch.setattr("bqutil.cli.get_job", lambda project, job_id, location: job)
     runner = CliRunner()
     for args in (
         ["analyze", "project:job", "--format", "json"],
@@ -109,7 +185,7 @@ def test_query_analyze_writes_one_json_document_to_stdout(
 
 def test_analyze_verbose_and_debug_render_stable_details(monkeypatch) -> None:
     job = query_job()
-    monkeypatch.setattr("bqutil.cli.get_job", lambda project, job_id: job)
+    monkeypatch.setattr("bqutil.cli.get_job", lambda project, job_id, location: job)
     result = CliRunner().invoke(
         main, ["analyze", "project:job", "--verbose", "--debug"]
     )
@@ -169,6 +245,26 @@ def test_dry_run_conflicts_precede_client_creation(monkeypatch, tmp_path) -> Non
     assert "client created" not in result.output
 
 
+def test_query_preprocesses_date_only_macros_before_submission(
+    monkeypatch, tmp_path
+) -> None:
+    monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path))
+    sql = tmp_path / "query.sql"
+    sql.write_text("SELECT {{ start_date() }}")
+    submitted: dict[str, str] = {}
+    monkeypatch.setattr("bqutil.cli.client", lambda project: object())
+    monkeypatch.setattr(
+        "bqutil.cli.run_query",
+        lambda query, client: submitted.update(query=query) or (query_job(), 0.1),
+    )
+    monkeypatch.setattr("bqutil.cli.preview_rows", lambda job, limit: [])
+
+    result = CliRunner().invoke(main, ["query", str(sql), "--project", "project"])
+
+    assert result.exit_code == 0, result.output
+    assert "{{ start_date() }}" not in submitted["query"]
+
+
 def test_query_persists_before_export_and_previews(monkeypatch, tmp_path) -> None:
     monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path))
     sql = tmp_path / "query.sql"
@@ -182,6 +278,7 @@ def test_query_persists_before_export_and_previews(monkeypatch, tmp_path) -> Non
     )
     assert result.exit_code == 0, result.output
     assert load_config()["last_job_id"] == "job"
+    assert load_config()["last_job_location"] == "US"
     assert "Job ID: job" in result.output
 
 

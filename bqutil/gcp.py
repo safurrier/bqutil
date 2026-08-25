@@ -28,6 +28,6 @@ def current_project() -> str | None:
     return value if result.returncode == 0 and value else None
 
 
-def get_job(project: str, job_id: str) -> Any:
-    """Fetch a BigQuery job by ID."""
-    return client(project).get_job(job_id, project=project)
+def get_job(project: str, job_id: str, location: str | None = None) -> Any:
+    """Fetch a BigQuery job by ID, optionally from its execution location."""
+    return client(project).get_job(job_id, project=project, location=location)

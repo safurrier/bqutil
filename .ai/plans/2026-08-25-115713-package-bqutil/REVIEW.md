@@ -29,6 +29,8 @@ description: Agent-friendly CLI and architecture-polish review evidence.
 - P1: `query --analyze` mixed a human job line with its stdout JSON document.
 - P2: Invalid dry-run option combinations constructed a credentialed client before
   local validation.
+- P1: `analyze` omitted BigQuery job location, so non-US/EU jobs could not be found.
+- P2: Query preprocessing skipped date-only macros and whitespace-form `ref()` calls.
 
 ## Disposition
 
@@ -41,3 +43,6 @@ description: Agent-friendly CLI and architecture-polish review evidence.
   `analyze --last --format json` against the approved project.
 - Routed the `query --analyze` job line to stderr and moved dry-run conflict checks
   before client construction. Focused regression tests cover both Codex findings.
+- Added `analyze --location`, persisted and reused last-job locations, and passed the
+  value through the concrete SDK adapter. Query preprocessing now runs for every dry
+  run or submission, and tests cover date-only and whitespace-form legacy macros.

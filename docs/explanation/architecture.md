@@ -24,7 +24,7 @@ Google Cloud authentication, query execution, and job metadata.
 | Module | Responsibility |
 |---|---|
 | `bqutil.cli` | Command parsing, project resolution, stdout/stderr contracts, and workflow order |
-| `bqutil.config` | XDG Base Directory JSON state: default project and last submitted job |
+| `bqutil.config` | XDG Base Directory JSON state: default project and last submitted job identity, including location |
 | `bqutil.gcp` | The one concrete `gcloud` and BigQuery SDK adapter |
 | `bqutil.query` | Legacy macro preprocessing, query submission, dry-run setup, and bounded row access |
 | `bqutil.analysis` | JSON-primitive query-plan summaries |
@@ -33,10 +33,11 @@ Google Cloud authentication, query execution, and job metadata.
 
 1. `query` resolves a project, reads and optionally preprocesses SQL, then either
    sends a BigQuery dry-run job or submits a real job.
-2. A real query waits for completion and records its job identity before any local
-   export or preview. This preserves recovery information if a filesystem operation
-   fails.
-3. `analyze` fetches an existing job through the concrete adapter and maps the SDK
+2. A real query waits for completion and records its job identity and location before
+   any local export or preview. This preserves recovery information if a filesystem
+   operation fails.
+3. `analyze` fetches an existing job through the concrete adapter. It accepts an
+   explicit location or reuses the saved location for `--last`, then maps the SDK
    object to terminal text or JSON-safe records.
 
 ## Invariants
@@ -46,6 +47,8 @@ Google Cloud authentication, query execution, and job metadata.
   not a plugin or protocol framework. Tests replace calls at that module seam.
 - JSON output never contains raw SDK objects.
 - Dry runs are non-executing estimates that leave bqutil state unchanged.
+- Query preprocessing runs before every dry run or submission. It remains a narrow
+  legacy dbt macro adapter, not a general dbt implementation.
 - Interactive selection isn't supported. Every automation input has an argument,
   flag, configuration value, or actionable error.
 

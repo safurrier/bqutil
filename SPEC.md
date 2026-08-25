@@ -30,10 +30,11 @@ users can recover and inspect a completed query without submitting it again.
   exits with a Click usage error and explicit remediation. A missing `gcloud`
   executable never produces a traceback.
 - Configuration remains `$XDG_CONFIG_HOME/bqutil/config.json` with
-  `default_project`, `last_job_id`, and `last_job_project` keys.
+  `default_project`, `last_job_id`, `last_job_project`, and `last_job_location` keys.
 - `query --dry-run` sends a `QueryJobConfig` with `dry_run=True` and
   `use_query_cache=False`. It doesn't wait for result rows or alter saved job state.
-- A real query records its job ID and project before local export or preview work.
+- A real query records its job ID, project, and BigQuery location before local export
+  or preview work.
 - `--preview-rows` reads at most the requested number of result rows.
 - JSON and large language model output contains JSON primitives only, including
   query-plan summaries.
@@ -55,18 +56,22 @@ users can recover and inspect a completed query without submitting it again.
 - `config --set-project/--show/--reset` owns persistent local state.
 - `query QUERY_FILE` accepts `--project`, `--dry-run`, `--preview-rows`, `--output`,
   `--analyze`, `--verbose`, and `--set-default-project`.
-- `analyze JOB_ID` accepts `PROJECT:JOB_ID`, `--project`, `--last`, `--format json`,
-  `--llm`, `--verbose`, and `--debug`.
+- `analyze JOB_ID` accepts `PROJECT:JOB_ID`, `--project`, `--location`, `--last`,
+  `--format json`, `--llm`, `--verbose`, and `--debug`.
+- `analyze --last` reuses the saved job location. Callers can provide `--location`
+  when inspecting a job that was not recorded locally.
 - Interactive selection isn't part of the package interface because it blocks
   non-interactive callers.
 - Legacy dbt rewriting remains documented, opinionated preprocessing rather than a
-  general dbt implementation.
+  general dbt implementation. It runs for every submitted query so supported date-only
+  macros and whitespace-form `ref()` calls are not skipped.
 
 ## Invariants
 
 - Dry runs don't create result rows or change bqutil state.
 - JSON output never contains raw SDK objects or Rich terminal rendering.
-- A completed real query's identity is durable before local export and preview work.
+- A completed real query's identity and location are durable before local export and
+  preview work.
 - The caller's credentials and supplied SQL retain authority over BigQuery access,
   billing, and table mutations.
 

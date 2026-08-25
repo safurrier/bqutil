@@ -23,6 +23,9 @@ description: Deterministic, writing, package-install, and live BigQuery evidence
   JSON-safe nonempty query plan.
 - Focused regression tests prove `query --analyze` leaves one JSON document on stdout
   and dry-run conflicts fail before credentialed client construction.
+- The GitHub repair tests prove explicit and saved BigQuery locations reach job
+  lookups, old configs normalize the missing location key, project-qualified IDs still
+  work, and date-only or whitespace-form macros are preprocessed before submission.
 
 ## Evidence
 

@@ -98,6 +98,7 @@ def configure(project: str | None, show: bool, reset: bool) -> None:
             "default_project": None,
             "last_job_id": None,
             "last_job_project": None,
+            "last_job_location": None,
         }
         save_config(config)
     if project:
@@ -109,10 +110,13 @@ def configure(project: str | None, show: bool, reset: bool) -> None:
 
 @main.command(
     "analyze",
-    epilog="Examples:\n  bqutil analyze PROJECT:JOB_ID --format json\n  bqutil query query.sql --project PROJECT\n  bqutil analyze --last --format json",
+    epilog="Examples:\n  bqutil analyze PROJECT:JOB_ID --format json\n  bqutil analyze JOB_ID --project PROJECT --location asia-northeast1\n  bqutil analyze --last --format json",
 )
 @click.argument("job_id", required=False)
 @click.option("--project", "project_option", metavar="PROJECT")
+@click.option(
+    "--location", "location_option", metavar="LOCATION", help="BigQuery job location."
+)
 @click.option(
     "--format", "output_format", type=click.Choice(["text", "json"]), default="text"
 )
@@ -134,6 +138,7 @@ def configure(project: str | None, show: bool, reset: bool) -> None:
 def analyze(
     job_id: str | None,
     project_option: str | None,
+    location_option: str | None,
     output_format: str,
     verbose: bool,
     llm: bool,
@@ -142,8 +147,10 @@ def analyze(
 ) -> None:
     """Analyze JOB_ID; use PROJECT:JOB_ID to specify its project."""
     config = load_config()
+    location = location_option
     if last_job:
         job_id, project_option = config["last_job_id"], config["last_job_project"]
+        location = location or config["last_job_location"]
         if not job_id or not project_option:
             raise click.UsageError(
                 "No last job is recorded. Pass JOB_ID and --project."
@@ -154,7 +161,7 @@ def analyze(
         raise click.UsageError(
             "JOB_ID is required unless --last is used; interactive selection was removed for reliable automation."
         )
-    job = get_job(resolve_project(project_option), job_id)
+    job = get_job(resolve_project(project_option), job_id, location)
     data = job_data(job)
     if llm:
         click.echo(
@@ -234,9 +241,7 @@ def query(
 ) -> None:
     """Execute SQL from QUERY_FILE. Queries can incur BigQuery charges."""
     project = resolve_project(project_option)
-    sql = query_file.read_text()
-    if "{{ ref(" in sql:
-        sql = replace_dbt_refs(sql, project)
+    sql = replace_dbt_refs(query_file.read_text(), project)
     if verbose:
         console.print(sql)
     if dry_run:
@@ -267,7 +272,13 @@ def query(
     bq_client = client(project)
     job, elapsed = run_query(sql, bq_client)
     config = load_config()
-    config.update({"last_job_id": job.job_id, "last_job_project": project})
+    config.update(
+        {
+            "last_job_id": job.job_id,
+            "last_job_project": project,
+            "last_job_location": getattr(job, "location", None),
+        }
+    )
     if set_default_project:
         config["default_project"] = project
     save_config(config)
