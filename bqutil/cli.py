@@ -7,10 +7,12 @@ from pathlib import Path
 from typing import Any
 
 import click
+from google.api_core.exceptions import GoogleAPICallError
+from google.auth.exceptions import GoogleAuthError
 from rich.console import Console
 
 from . import __version__
-from .analysis import analyze_query_plan, format_bytes
+from .analysis import analyze_query_plan, compare_query_jobs, format_bytes
 from .config import load_config, save_config
 from .gcp import client, current_project, get_job
 from .query import dry_run_query, preview_rows, replace_dbt_refs, run_query
@@ -30,6 +32,36 @@ def resolve_project(project: str | None) -> str:
     raise click.UsageError(
         "A project is required. Pass --project or run 'bqutil config --set-project PROJECT'."
     )
+
+
+def resolve_job_reference(
+    job_reference: str,
+    explicit_project: str | None,
+    shared_project: str | None,
+    explicit_location: str | None,
+    shared_location: str | None,
+) -> tuple[str, str, str | None]:
+    """Resolve one compare operand with qualified IDs taking project precedence."""
+    if ":" in job_reference:
+        project, job_id = job_reference.split(":", 1)
+    else:
+        project = resolve_project(explicit_project or shared_project)
+        job_id = job_reference
+    return project, job_id, explicit_location or shared_location
+
+
+def fetch_comparison_job(
+    operand: str, project: str, job_id: str, location: str | None
+) -> Any:
+    """Fetch one comparison operand with an actionable BigQuery failure."""
+    try:
+        return get_job(project, job_id, location)
+    except (GoogleAPICallError, GoogleAuthError) as error:
+        location_detail = location or "unspecified"
+        raise click.ClickException(
+            f"Unable to fetch {operand} job '{job_id}' in project '{project}' "
+            f"at location '{location_detail}'. Check the job ID, location, and BigQuery permissions."
+        ) from error
 
 
 def job_data(job: Any) -> dict[str, Any]:
@@ -72,7 +104,65 @@ def render_preview(job: Any, limit: int) -> None:
     console.print_json(json.dumps(rows, default=str))
 
 
-@click.group(context_settings={"help_option_names": ["-h", "--help"]})
+def format_signed_number(value: int | None, unit: str) -> str:
+    """Render an exact signed numeric delta or an unavailable value."""
+    if value is None:
+        return "unavailable"
+    return f"{value:+,} {unit}"
+
+
+def format_signed_bytes(value: int | None) -> str:
+    """Render a byte delta while preserving its sign."""
+    if value is None:
+        return "unavailable"
+    sign = "+" if value >= 0 else "-"
+    return f"{sign}{format_bytes(abs(value))}"
+
+
+def render_comparison_text(comparison: dict[str, Any]) -> None:
+    """Render a concise human delta summary without assigning a quality verdict."""
+    click.echo("Candidate minus baseline: positive means candidate is greater.")
+    click.echo("Missing values are unavailable; no optimization verdict is inferred.")
+    units = {
+        "duration_milliseconds": "ms",
+        "bytes_processed": "bytes",
+        "slot_milliseconds": "ms",
+        "stage_count": "stages",
+        "stage_records_read_sum": "stage records read",
+        "stage_shuffle_output_bytes_sum": "stage shuffle bytes",
+    }
+    labels = {
+        "duration_milliseconds": "Duration",
+        "bytes_processed": "Bytes processed",
+        "slot_milliseconds": "Slot milliseconds",
+        "stage_count": "Query-plan stage count",
+        "stage_records_read_sum": "Stage records read sum",
+        "stage_shuffle_output_bytes_sum": "Stage shuffle output bytes sum",
+    }
+    for metric, evidence in comparison["metrics"].items():
+        delta = evidence["absolute_delta"]
+        if metric in {"bytes_processed", "stage_shuffle_output_bytes_sum"}:
+            rendered_delta = format_signed_bytes(delta)
+        else:
+            rendered_delta = format_signed_number(delta, units[metric])
+        percent = evidence["percent_change"]
+        rendered_percent = "unavailable" if percent is None else f"{percent:+.2f}%"
+        click.echo(f"{labels[metric]}: {rendered_delta} ({rendered_percent})")
+
+
+@click.group(
+    context_settings={"help_option_names": ["-h", "--help"]},
+    epilog=(
+        "\b\nAgent workflow:\n"
+        "  bqutil query candidate.sql --project PROJECT --dry-run\n"
+        "  bqutil query candidate.sql --project PROJECT\n"
+        "  bqutil analyze --last --format json\n"
+        "  bqutil compare BASELINE_JOB CANDIDATE_JOB --project PROJECT --format json\n\n"
+        "Queries can incur BigQuery charges. Use --dry-run before unfamiliar SQL.\n"
+        "Compare retains raw evidence and exact candidate-minus-baseline deltas; the caller\n"
+        "decides what the evidence means."
+    ),
+)
 @click.version_option(__version__)
 def main() -> None:
     """Execute BigQuery SQL files and inspect existing BigQuery jobs."""
@@ -190,6 +280,99 @@ def analyze(
         click.echo(
             "Diagnostics: " + json.dumps(debug_data(job), default=str, sort_keys=True)
         )
+
+
+@main.command(
+    "compare",
+    epilog=(
+        "\b\nExamples:\n"
+        "  bqutil compare before-job after-job --project PROJECT --format json\n"
+        "  bqutil compare PROJECT:before PROJECT:after --location US --format text\n"
+        "  bqutil compare before after --baseline-location US "
+        "--candidate-location asia-northeast1 --format json"
+    ),
+)
+@click.argument("baseline_job", metavar="BASELINE_JOB")
+@click.argument("candidate_job", metavar="CANDIDATE_JOB")
+@click.option(
+    "--project",
+    "shared_project",
+    metavar="PROJECT",
+    help="Project fallback for both jobs.",
+)
+@click.option(
+    "--baseline-project", metavar="PROJECT", help="Project fallback for BASELINE_JOB."
+)
+@click.option(
+    "--candidate-project", metavar="PROJECT", help="Project fallback for CANDIDATE_JOB."
+)
+@click.option(
+    "--location",
+    "shared_location",
+    metavar="LOCATION",
+    help="Location fallback for both jobs.",
+)
+@click.option(
+    "--baseline-location",
+    metavar="LOCATION",
+    help="Location fallback for BASELINE_JOB.",
+)
+@click.option(
+    "--candidate-location",
+    metavar="LOCATION",
+    help="Location fallback for CANDIDATE_JOB.",
+)
+@click.option(
+    "--format",
+    "output_format",
+    type=click.Choice(["text", "json"]),
+    default="json",
+    show_default=True,
+    help="Output JSON evidence by default; use text for a concise delta summary.",
+)
+def compare(
+    baseline_job: str,
+    candidate_job: str,
+    shared_project: str | None,
+    baseline_project: str | None,
+    candidate_project: str | None,
+    shared_location: str | None,
+    baseline_location: str | None,
+    candidate_location: str | None,
+    output_format: str,
+) -> None:
+    """Compare query jobs; every delta is CANDIDATE_JOB minus BASELINE_JOB."""
+    baseline_project_id, baseline_job_id, baseline_location_id = resolve_job_reference(
+        baseline_job,
+        baseline_project,
+        shared_project,
+        baseline_location,
+        shared_location,
+    )
+    candidate_project_id, candidate_job_id, candidate_location_id = (
+        resolve_job_reference(
+            candidate_job,
+            candidate_project,
+            shared_project,
+            candidate_location,
+            shared_location,
+        )
+    )
+    baseline = fetch_comparison_job(
+        "baseline", baseline_project_id, baseline_job_id, baseline_location_id
+    )
+    candidate = fetch_comparison_job(
+        "candidate", candidate_project_id, candidate_job_id, candidate_location_id
+    )
+    if baseline.job_type != "query" or candidate.job_type != "query":
+        raise click.UsageError(
+            "compare only supports query jobs. Pass BigQuery query job IDs for both operands."
+        )
+    comparison = compare_query_jobs(baseline, candidate)
+    if output_format == "json":
+        click.echo(json.dumps(comparison, indent=2))
+        return
+    render_comparison_text(comparison)
 
 
 @main.command(

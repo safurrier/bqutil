@@ -14,6 +14,17 @@ index:
 
 ## Ledger
 
+### 2026-08-25 — compare-jobs
+
+- Plan: `.ai/plans/2026-08-25-150538-compare-jobs/`
+- Change: Add a noninteractive comparison command with raw query-job summaries and
+  exact candidate-minus-baseline deltas.
+- Reason: Agents can compare before and after runs without recreating job-plan metrics
+  or losing cache and stage evidence.
+- Reflected in: `SPEC.md`, `README.md`, and `docs/explanation/architecture.md`.
+- Evidence: `.ai/plans/2026-08-25-150538-compare-jobs/artifacts/validation-summary.md`
+  and `.ai/plans/2026-08-25-150538-compare-jobs/artifacts/schema-example.md`.
+
 ### 2026-08-25 — package-bqutil
 
 - Plan: `.ai/plans/2026-08-25-115713-package-bqutil/`

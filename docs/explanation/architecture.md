@@ -27,7 +27,7 @@ Google Cloud authentication, query execution, and job metadata.
 | `bqutil.config` | XDG Base Directory JSON state: default project and last submitted job identity, including location |
 | `bqutil.gcp` | The one concrete `gcloud` and BigQuery SDK adapter |
 | `bqutil.query` | Legacy macro preprocessing, query submission, dry-run setup, and bounded row access |
-| `bqutil.analysis` | JSON-primitive query-plan summaries |
+| `bqutil.analysis` | JSON-primitive query-plan summaries and exact comparison evidence |
 
 ## Primary flows
 
@@ -39,6 +39,12 @@ Google Cloud authentication, query execution, and job metadata.
 3. `analyze` fetches an existing job through the concrete adapter. It accepts an
    explicit location or reuses the saved location for `--last`, then maps the SDK
    object to terminal text or JSON-safe records.
+4. `compare` resolves baseline and candidate jobs independently through the same
+   adapter. A fetch failure names the affected operand and resolved project/location.
+   The analysis module retains both raw summaries, including all public query-plan
+   stage evidence, and computes exact candidate minus baseline deltas without issuing
+   an optimization verdict. JSON is the default comparison interface; text is a
+   concise human delta rendering that omits raw summaries.
 
 ## Invariants
 
@@ -49,6 +55,11 @@ Google Cloud authentication, query execution, and job metadata.
 - Dry runs are non-executing estimates that leave bqutil state unchanged.
 - Query preprocessing runs before every dry run or submission. It remains a narrow
   legacy dbt macro adapter, not a general dbt implementation.
+- Compare defaults to JSON, which includes cache state and all public query-plan stage
+  evidence. Exact numeric deltas are an agent-facing machine consumer schema, not a
+  quality label,
+  score, or action gate. An unavailable query plan and its stage metrics remain null.
+  An observed empty plan retains an empty list and zero stage metrics.
 - Interactive selection isn't supported. Every automation input has an argument,
   flag, configuration value, or actionable error.
 

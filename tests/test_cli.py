@@ -4,6 +4,8 @@ import json
 from types import SimpleNamespace
 
 from click.testing import CliRunner
+from google.api_core.exceptions import GoogleAPICallError
+from google.auth.exceptions import GoogleAuthError
 
 from bqutil.cli import main, resolve_project
 from bqutil.config import load_config
@@ -49,6 +51,18 @@ def test_version_and_command_examples() -> None:
     assert "--location LOCATION" in analyze_help
     assert "analyze --last" in analyze_help
     assert "config --set-project" in runner.invoke(main, ["config", "--help"]).output
+
+
+def test_root_help_includes_agent_comparison_workflow() -> None:
+    result = CliRunner().invoke(main, ["--help"])
+
+    assert result.exit_code == 0
+    assert "Agent workflow" in result.output
+    assert "query candidate.sql --project PROJECT --dry-run" in result.output
+    assert (
+        "compare BASELINE_JOB CANDIDATE_JOB --project PROJECT --format json"
+        in result.output
+    )
 
 
 def test_config_round_trip(monkeypatch, tmp_path) -> None:
@@ -139,6 +153,183 @@ def test_analyze_last_reuses_persisted_location(monkeypatch, tmp_path) -> None:
 
     assert result.exit_code == 0, result.output
     assert captured["location"] == "asia-northeast1"
+
+
+def test_compare_json_is_one_parseable_document_and_uses_project_location_precedence(
+    monkeypatch,
+) -> None:
+    baseline = query_job()
+    baseline.job_id = "before"
+    candidate = query_job()
+    candidate.job_id = "after"
+    candidate.total_bytes_processed = 2048
+    captured: list[tuple[str, str, str | None]] = []
+
+    def fetch(project: str, job_id: str, location: str | None) -> SimpleNamespace:
+        captured.append((project, job_id, location))
+        return baseline if job_id == "before" else candidate
+
+    monkeypatch.setattr("bqutil.cli.get_job", fetch)
+    result = CliRunner().invoke(
+        main,
+        [
+            "compare",
+            "qualified-project:before",
+            "after",
+            "--project",
+            "shared-project",
+            "--candidate-project",
+            "candidate-project",
+            "--location",
+            "US",
+            "--candidate-location",
+            "asia-northeast1",
+        ],
+    )
+
+    assert result.exit_code == 0, result.output
+    assert result.stderr == ""
+    assert captured == [
+        ("qualified-project", "before", "US"),
+        ("candidate-project", "after", "asia-northeast1"),
+    ]
+    payload = json.loads(result.stdout)
+    assert payload["semantics"] == "candidate_minus_baseline"
+    assert payload["baseline"]["cache_hit"] is False
+    assert payload["candidate"]["cache_hit"] is False
+    assert payload["baseline"]["query_plan"][0]["entry_id"] == "1"
+    assert payload["candidate"]["query_plan"][0]["entry_id"] == "1"
+    assert payload["metrics"]["bytes_processed"]["absolute_delta"] == 1024
+
+
+def test_compare_baseline_fetch_failure_is_actionable_without_traceback(
+    monkeypatch,
+) -> None:
+    def fail_baseline(
+        project: str, job_id: str, location: str | None
+    ) -> SimpleNamespace:
+        raise GoogleAPICallError("baseline denied")
+
+    monkeypatch.setattr("bqutil.cli.get_job", fail_baseline)
+
+    result = CliRunner().invoke(
+        main, ["compare", "project:before", "project:after", "--format", "json"]
+    )
+
+    assert result.exit_code != 0
+    assert "Unable to fetch baseline job 'before' in project 'project'" in result.output
+    assert "Check the job ID, location, and BigQuery permissions" in result.output
+    assert "Traceback" not in result.output
+
+
+def test_compare_candidate_fetch_failure_is_actionable_without_traceback(
+    monkeypatch,
+) -> None:
+    baseline = query_job()
+
+    def fail_candidate(
+        project: str, job_id: str, location: str | None
+    ) -> SimpleNamespace:
+        if job_id == "before":
+            return baseline
+        raise GoogleAPICallError("candidate denied")
+
+    monkeypatch.setattr("bqutil.cli.get_job", fail_candidate)
+
+    result = CliRunner().invoke(
+        main,
+        [
+            "compare",
+            "project:before",
+            "project:after",
+            "--location",
+            "US",
+            "--format",
+            "json",
+        ],
+    )
+
+    assert result.exit_code != 0
+    assert (
+        "Unable to fetch candidate job 'after' in project 'project' at location 'US'"
+        in result.output
+    )
+    assert "Check the job ID, location, and BigQuery permissions" in result.output
+    assert "Traceback" not in result.output
+
+
+def test_compare_baseline_auth_failure_is_actionable_without_traceback(
+    monkeypatch,
+) -> None:
+    def fail_baseline(
+        project: str, job_id: str, location: str | None
+    ) -> SimpleNamespace:
+        raise GoogleAuthError("credentials need refresh")
+
+    monkeypatch.setattr("bqutil.cli.get_job", fail_baseline)
+
+    result = CliRunner().invoke(
+        main, ["compare", "project:before", "project:after", "--format", "json"]
+    )
+
+    assert result.exit_code != 0
+    assert "Unable to fetch baseline job 'before' in project 'project'" in result.output
+    assert "Check the job ID, location, and BigQuery permissions" in result.output
+    assert "Traceback" not in result.output
+
+
+def test_compare_candidate_auth_failure_is_actionable_without_traceback(
+    monkeypatch,
+) -> None:
+    baseline = query_job()
+
+    def fail_candidate(
+        project: str, job_id: str, location: str | None
+    ) -> SimpleNamespace:
+        if job_id == "before":
+            return baseline
+        raise GoogleAuthError("credentials need refresh")
+
+    monkeypatch.setattr("bqutil.cli.get_job", fail_candidate)
+
+    result = CliRunner().invoke(
+        main, ["compare", "project:before", "project:after", "--format", "json"]
+    )
+
+    assert result.exit_code != 0
+    assert "Unable to fetch candidate job 'after' in project 'project'" in result.output
+    assert "Check the job ID, location, and BigQuery permissions" in result.output
+    assert "Traceback" not in result.output
+
+
+def test_compare_text_explains_candidate_minus_baseline(monkeypatch) -> None:
+    baseline = query_job()
+    candidate = query_job()
+    candidate.total_bytes_processed = 512
+    monkeypatch.setattr(
+        "bqutil.cli.get_job",
+        lambda project, job_id, location: baseline if job_id == "before" else candidate,
+    )
+
+    result = CliRunner().invoke(
+        main, ["compare", "project:before", "project:after", "--format", "text"]
+    )
+
+    assert result.exit_code == 0, result.output
+    assert "candidate minus baseline" in result.output.lower()
+    assert "bytes processed" in result.output.lower()
+    assert "B" in result.output
+
+
+def test_compare_rejects_non_query_jobs(monkeypatch) -> None:
+    job = query_job()
+    job.job_type = "load"
+    monkeypatch.setattr("bqutil.cli.get_job", lambda project, job_id, location: job)
+
+    result = CliRunner().invoke(main, ["compare", "project:before", "project:after"])
+
+    assert result.exit_code != 0
+    assert "only supports query jobs" in result.output
 
 
 def test_missing_gcloud_returns_actionable_usage_error(monkeypatch, tmp_path) -> None:
